@@ -69,7 +69,8 @@ We first adjust the random forest model to find the most "important" covariants 
 modFit = randomForest(classe~., data=training, importance=T, ntree=100)
 varImpPlot(modFit)
 ```
-<img class=http://oi66.tinypic.com/qzmcmb.jpg height=450>
+
+<img class=center src=http://i65.tinypic.com/v2xrav.jp height=450>
 
 Using the Accuracy and Gini graphs above, we select the top 10 variables that we will use for model building.
 
@@ -119,7 +120,7 @@ modFit3 <- train(classe~roll_belt+num_window+pitch_belt+magnet_dumbbell_y+magnet
 
 To evaluate the model before do the 20 proposed predictions, we use de "pretest" data reserved from the beginning.
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
-pred <- predict(fitModel, newdata=pretest)
+pred <- predict(modFit3, newdata=pretest)
 confusionMat <- confusionMatrix(pred, pretest$classe)
 confusionMat
 ```
@@ -160,3 +161,20 @@ Balanced Accuracy      1.0000   1.0000    1.000   1.0000   1.0000
 
 The results show us that the accurancy of the model are very nice, in this case we have achieved 1 of accurancy, a perfect result! :)
 
+
+## Predictions
+We do the predictions for the testing data and we use the provided code to prepare the 20 documents to evaluation.
+```
+predictions = predict(modFit, newdata=testing)
+testing$classe = predictions
+
+answers = testing$classe
+write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_",i,".txt")
+    write.table(x[i], file=filename, quote=FALSE, row.names=FALSE, col.names=FALSE)
+  }
+}
+write_files(answers)
+```
