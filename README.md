@@ -69,6 +69,8 @@ We first adjust the random forest model to find the most "important" covariants 
 modFit = randomForest(classe~., data=training, importance=T, ntree=100)
 varImpPlot(modFit)
 ```
+<img class=http://oi66.tinypic.com/qzmcmb.jpg height=450>
+
 Using the Accuracy and Gini graphs above, we select the top 10 variables that we will use for model building.
 
 The 10 covariates selected are: yaw_belt, roll_belt, num_window, pitch_belt, magnet_dumbbell_y, magnet_dumbbell_z, pitch_forearm, accel_dumbbell_y, roll_arm, and roll_forearm.
@@ -91,6 +93,7 @@ These two covariants have a 0.814 correlation, then we should choose only one of
 modFit2 = rpart(classe~., data=training, method="class")
 prp(modFit2)
 ```
+<img class=center src=http://i66.tinypic.com/2f0dgk3.png height=450>
 
 We observe that the most important one is "roll_belt" covariant, as a resault the 9 covariants that we use are these:
 *roll_belt
