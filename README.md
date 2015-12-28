@@ -1,7 +1,7 @@
 # Practical-Machine-Learning-Writeup
 My Practical Machine Learning Writeup
 
-
+*NOTE: My apologise for the minuts of delay in my submit. I have a confusion with the timezone, sorry about that.* 
 
 ## Load Libraries
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
