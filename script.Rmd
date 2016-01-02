@@ -1,0 +1,112 @@
+
+##--- PROJECTE ---##
+
+#carregar llibreries
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(rattle)
+library(randomForest)
+library(e1071)
+
+#llegir dades
+training = read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"), na.strings=c("NA","#DIV/0!",""))
+testing  = read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"), na.strings=c("NA","#DIV/0!",""))
+
+#unifico noms per no tenir problemes despres 
+#(tenint en compte que les dades de test no tenen la variable "class" pero tenen la "problem_id")
+names(testing)=c(names(training)[-length(names(training))],"probolem_id")
+
+#divideixo les de training en dues parts per poder fer un test jo
+set.seed(100490)
+inTrain = createDataPartition(y=training$classe, p=0.7, list=FALSE)
+
+training = training[inTrain,]
+pretest = training[-inTrain,]
+dim(training)
+dim(pretest)
+
+#explorem dades (sempre nomes amb les de trainig, sino es fer trampes)
+str(training,list.len=15)
+table(training$classe)
+
+#extraccio de les primeres variables (index i referencies) 
+training = training[, 7:160]
+pretest = pretest[, 7:160]
+testing = testing[, 7:160]
+
+#extracció d'aquelles variables que tinguin més de la meitat d'observacions amb NA
+#si tingues poques variables miraria d'imputar dades pero com que tenim moltes no cal
+training = training[,colSums(is.na(training))< (nrow(training)/2) ]
+#i com sempre apliquem el mateix que a "training" a "pretest" i "testing"
+pretest = pretest[,names(training)]
+testing = testing[,c(names(training)[-length(names(training))],"probolem_id")]
+
+
+#identificacio de les "zero covariates"
+nzv_cols = nearZeroVar(training)
+nzv_cols #no n'hi ha
+
+#elaboració del model de random forests
+modFit = train(classe~. ,data=training, method="rf",
+               trControl=trainControl(method="cv",number=2),
+               prox=T,
+               verbose=T,
+               allowParallel=T)
+
+modFit
+getTree(modFit$finalModel,k=2)
+#si vulguessim fer un model explicatiu hauriem de mirar de quedar-nos amb 
+#menys variables sense perdre massa "accuracity" i guanyant en facilitat de 
+#interpretació del model (quedant-nos amb unes 10 variables o així)
+#com que en aquest cas el volem per fer prediccions doncs...PA'ALANTE
+
+modFit = randomForest(classe~., data=training, importance=T, ntree=100)
+varImpPlot(modFit)
+
+corr = cor(training[,c("yaw_belt","roll_belt","num_window","pitch_belt","magnet_dumbbell_z","magnet_dumbbell_y","pitch_forearm","accel_dumbbell_y","roll_arm","roll_forearm")])
+diag(corr) = 0
+which(abs(corr)>0.75, arr.ind=T)
+cor(training$roll_belt,training$yaw_belt)
+
+qplot(roll_belt, magnet_dumbbell_y, colour=classe, data=training)
+
+modFit2 = rpart(classe~., data=training, method="class")
+prp(modFit2)
+
+modFit3 <- train(classe~roll_belt+num_window+pitch_belt+magnet_dumbbell_y+magnet_dumbbell_z+pitch_forearm+accel_dumbbell_y+roll_arm+roll_forearm,
+                  data=training,
+                  method="rf",
+                  trControl=trainControl(method="cv",number=2),
+                  prox=T,
+                  verbose=T,
+                  allowParallel=T)
+
+
+pred <- predict(modFit3, newdata=pretest)
+confusionMat <- confusionMatrix(pred, pretest$classe)
+confusionMat
+
+#tampoc mirem correlacions entre variables ni res de tot aixo perque 
+#estem fent un model predictiu, no explicatiu
+
+#prediccions sobre les dedes de pretest i "accuracity" de les predicions
+pred = predict(modFit, newdata=pretest)
+confM = confusionMatrix(data=pred, reference=na.omit(pretest$classe)
+confusionMat
+
+
+#20 prediccions que cal fer
+predictions = predict(modFit, newdata=testing)
+testing$classe = predictions
+
+answers = testing$classe
+write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_",i,".txt")
+    write.table(x[i], file=filename, quote=FALSE, row.names=FALSE, col.names=FALSE)
+  }
+}
+write_files(answers)
